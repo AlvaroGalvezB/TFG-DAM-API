@@ -1,0 +1,376 @@
+openapi: 3.0.0
+info:
+  title: Conecta Solidaria API
+  description: API para la gestión de eventos solidarios y voluntariado
+  version: 1.0.0
+  contact:
+    email: tu@email.com
+
+servers:
+  - url: https://conectasolidariaapi.vercel.app/api
+    description: Servidor de producción
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+        phone_number:
+          type: string
+        organization_description:
+          type: string
+        role_name:
+          type: string
+          enum: [volunteer, organization]
+
+    Event:
+      type: object
+      properties:
+        event_id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        event_date:
+          type: string
+          format: date-time
+        location:
+          type: string
+        volunteer_limit:
+          type: integer
+        image_url:
+          type: string
+
+paths:
+  /general/register:
+    post:
+      tags:
+        - Autenticación
+      summary: Registrar nuevo usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+                phone_number:
+                  type: string
+                role_name:
+                  type: string
+                  enum: [volunteer, organization]
+                organization_description:
+                  type: string
+      responses:
+        '201':
+          description: Usuario registrado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+
+  /general/login:
+    post:
+      tags:
+        - Autenticación
+      summary: Iniciar sesión
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+
+  /general/profile:
+    get:
+      tags:
+        - Usuario
+      security:
+        - BearerAuth: []
+      summary: Obtener perfil del usuario
+      responses:
+        '200':
+          description: Perfil del usuario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /general/update-profile:
+    put:
+      tags:
+        - Usuario
+      security:
+        - BearerAuth: []
+      summary: Actualizar perfil del usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                phone_number:
+                  type: string
+                organization_description:
+                  type: string
+      responses:
+        '200':
+          description: Perfil actualizado exitosamente
+
+  /ong/create:
+    post:
+      tags:
+        - ONG
+      security:
+        - BearerAuth: []
+      summary: Crear nuevo evento
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                event_date:
+                  type: string
+                  format: date-time
+                location:
+                  type: string
+                volunteer_limit:
+                  type: integer
+                image_file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Evento creado exitosamente
+
+  /ong/list:
+    get:
+      tags:
+        - ONG
+      security:
+        - BearerAuth: []
+      summary: Obtener eventos creados por la ONG
+      responses:
+        '200':
+          description: Lista de eventos de la ONG
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
+
+  /ong/delete/{eventId}:
+    delete:
+      tags:
+        - ONG
+      security:
+        - BearerAuth: []
+      summary: Eliminar un evento
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Evento eliminado exitosamente
+
+  /ong/edit/{eventId}:
+    put:
+      tags:
+        - ONG
+      security:
+        - BearerAuth: []
+      summary: Editar un evento
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                event_date:
+                  type: string
+                  format: date-time
+                location:
+                  type: string
+                volunteer_limit:
+                  type: integer
+                image_file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Evento actualizado exitosamente
+
+  /ong/event/{eventId}:
+    get:
+      tags:
+        - ONG
+      security:
+        - BearerAuth: []
+      summary: Obtener detalles de un evento específico
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detalles del evento
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+
+  /volunteer/list:
+    get:
+      tags:
+        - Voluntarios
+      summary: Obtener lista de eventos disponibles
+      responses:
+        '200':
+          description: Lista de eventos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
+
+  /volunteer/register:
+    post:
+      tags:
+        - Voluntarios
+      security:
+        - BearerAuth: []
+      summary: Registrarse en un evento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                event_id:
+                  type: integer
+                registration_date:
+                  type: string
+                  format: date-time
+      responses:
+        '201':
+          description: Registro exitoso en el evento
+
+  /volunteer/unregister/{eventId}:
+    delete:
+      tags:
+        - Voluntarios
+      security:
+        - BearerAuth: []
+      summary: Cancelar registro en un evento
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Registro cancelado exitosamente
+
+  /volunteer/user-registrations:
+    get:
+      tags:
+        - Voluntarios
+      security:
+        - BearerAuth: []
+      summary: Obtener IDs de eventos en los que el usuario está registrado
+      responses:
+        '200':
+          description: Lista de IDs de eventos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: integer
+
+  /volunteer/user-events:
+    get:
+      tags:
+        - Voluntarios
+      security:
+        - BearerAuth: []
+      summary: Obtener eventos pasados del usuario
+      responses:
+        '200':
+          description: Lista de eventos pasados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
